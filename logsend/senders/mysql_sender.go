@@ -17,10 +17,12 @@ var (
 	mysqlQuery = flag.String("mysql-query", "", "Example: insert into test1(teststring, testfloat) values('{{.gate}}', {{.exec_time}});")
 )
 
+// 初始化注册发送方
 func init() {
 	RegisterNewSender("mysql", InitMysql, NewMysqlSender)
 }
 
+// 初始化数据库连接,
 func InitMysql(conf interface{}) {
 	host := conf.(map[string]interface{})["host"].(string)
 	db, err := sql.Open("mysql", host)
@@ -28,6 +30,7 @@ func InitMysql(conf interface{}) {
 		panic(err.Error())
 	}
 
+	// 启动goroutine处理数据,通过mysqlCh交换数据
 	go func() {
 		defer db.Close()
 		Conf.Logger.Println("mysql queue is starts")
@@ -69,21 +72,25 @@ func InitMysql(conf interface{}) {
 	return
 }
 
+// 创建新的MysqlSender
 func NewMysqlSender() Sender {
 	mysqlSender := &MysqlSender{}
 	mysqlSender.sendCh = mysqlCh
 	return Sender(mysqlSender)
 }
 
+// Mysql发送者结构
 type MysqlSender struct {
 	sendCh chan *string
 	tmpl   *template.Template
 }
 
+// 名称
 func (self *MysqlSender) Name() string {
 	return "mysql"
 }
 
+// 设置配置
 func (self *MysqlSender) SetConfig(rawConfig interface{}) error {
 	var query string
 	switch rawConfig.(map[string]interface{})["query"].(type) {
@@ -99,13 +106,16 @@ func (self *MysqlSender) SetConfig(rawConfig interface{}) error {
 	return nil
 }
 
+// 发送数据
 func (self *MysqlSender) Send(data interface{}) {
 	buf := new(bytes.Buffer)
+	// 根据模板转换数据
 	err := self.tmpl.Execute(buf, data)
 	if err != nil {
 		Conf.Logger.Println("mysql template error ", err, data)
 	}
 	str := buf.String()
+	// 数据写入channel
 	self.sendCh <- &str
 	return
 }

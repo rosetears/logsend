@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// 注册新的发送者
 func RegisterNewSender(name string, init func(interface{}), get func() Sender) {
 	sender := &SenderRegister{
 		init: init,
@@ -17,6 +18,7 @@ func RegisterNewSender(name string, init func(interface{}), get func() Sender) {
 	return
 }
 
+// 发送者类型
 type SenderRegister struct {
 	init        func(interface{})
 	get         func() Sender
@@ -28,6 +30,7 @@ func (self *SenderRegister) Init(val interface{}) {
 	self.initialized = true
 }
 
+// 配置类型
 type Configuration struct {
 	WatchDir          string
 	ContinueWatch     bool
@@ -43,6 +46,7 @@ type Configuration struct {
 	registeredSenders map[string]*SenderRegister
 }
 
+// 创建全局配置变量
 var Conf = &Configuration{
 	WatchDir:          "",
 	Memprofile:        "",
@@ -52,9 +56,11 @@ var Conf = &Configuration{
 }
 
 var (
+	// 原始配置变量,使用pipe处理日志时用到
 	rawConfig = make(map[string]interface{}, 0)
 )
 
+// 内存分析
 func mempprof() {
 	if Conf.memprofile == nil {
 		Conf.memprofile, _ = os.Create(Conf.Memprofile)
@@ -69,6 +75,7 @@ func debug(msg ...interface{}) {
 	Conf.Logger.Printf("debug: %+v", msg)
 }
 
+// 类型转换
 func i2float64(i interface{}) float64 {
 	switch i.(type) {
 	case string:
